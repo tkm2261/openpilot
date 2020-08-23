@@ -81,7 +81,7 @@ class PathPlanner():
       return desired_steering_angle_mpc
     elif self.frame_counter < 20 + len(self.attacked_desiered_steering_angles):
       # For the next 20 frames (1 sec), use attacked angle
-      attacked_angle = self.attacked_desiered_steering_angles[20 + self.frame_counter]
+      attacked_angle = self.attacked_desiered_steering_angles[self.frame_counter - 20]
       self.frame_counter += 1
       return attacked_angle
     else:
