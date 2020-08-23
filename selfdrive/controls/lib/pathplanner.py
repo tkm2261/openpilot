@@ -62,6 +62,34 @@ class PathPlanner():
     self.lane_change_ll_prob = 1.0
     self.prev_one_blinker = False
 
+    # 1 sec (from 108th to 128th frame) attacked desided steering angle in data_0419_left_best
+    self.attacked_desiered_steering_angles = [ 0.87280548,  2.52871943,  4.37565708,  6.39833641,
+        8.41466236, 10.46778202, 12.60741329, 14.73812675,
+       16.80992699, 18.55095863, 19.45571709, 19.32326126,
+       18.61335754, 20.23872566, 20.22135544, 19.90451431,
+       19.27945137, 16.9381485 , 13.52146149,  9.29796886]
+    # counter to know when to start attack (1 sec after OP works)
+    self.frame_counter = 0
+
+  def _get_attacked_steering_angle(self, desired_steering_angle_mpc):
+
+    self.frame_counter = self.frame_counter % 40
+
+    if self.frame_counter < 20:
+      # For the first 20 frames (1 sec), just use mpc output
+      self.frame_counter += 1
+      return desired_steering_angle_mpc
+    elif self.frame_counter < 20 + len(self.attacked_desiered_steering_angles):
+      # For the next 20 frames (1 sec), use attacked angle
+      attacked_angle = self.attacked_desiered_steering_angles[20 + self.frame_counter]
+      self.frame_counter += 1
+      return attacked_angle
+    else:
+      # Repeat above after 40 frames (2 sec)
+      self.frame_counter = 0
+      return desired_steering_angle_mpc
+
+
   def setup_mpc(self):
     self.libmpc = libmpc_py.libmpc
     self.libmpc.init(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, self.steer_rate_cost)
@@ -179,6 +207,9 @@ class PathPlanner():
     self.cur_state[0].delta = delta_desired
 
     self.angle_steers_des_mpc = float(math.degrees(delta_desired * VM.sR) + angle_offset)
+    # Overwirte desired steering angle
+    self.angle_steers_des_mpc = self._get_attacked_steering_angle(self.angle_steers_des_mpc)
+
 
     #  Check for infeasable MPC solution
     mpc_nans = any(math.isnan(x) for x in self.mpc_solution[0].delta)
