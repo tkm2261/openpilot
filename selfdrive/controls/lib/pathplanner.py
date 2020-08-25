@@ -45,6 +45,8 @@ def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_
   states[0].psi = v_ego * curvature_factor * math.radians(steer_angle) / steer_ratio * delay
   return states
 
+import logging
+
 
 class PathPlanner():
   def __init__(self, CP):
@@ -63,17 +65,23 @@ class PathPlanner():
     self.prev_one_blinker = False
 
     # 1 sec (from 108th to 128th frame) attacked desided steering angle in data_0419_left_best
-    self.attacked_desiered_steering_angles = [ 0.87280548,  2.52871943,  4.37565708,  6.39833641,
-        8.41466236, 10.46778202, 12.60741329, 14.73812675,
-       16.80992699, 18.55095863, 19.45571709, 19.32326126,
-       18.61335754, 20.23872566, 20.22135544, 19.90451431,
-       19.27945137, 16.9381485 , 13.52146149,  9.29796886]
+    self.attacked_desiered_steering_angles = [ 0.35339281,  0.97042863,  1.81682049,  2.6717257 ,  3.44327773,
+         4.16783665,  4.87042968,  5.5799014 ,  6.29130885,  6.92500526,
+         7.51918909,  8.0738612 ,  8.5252316 ,  8.95282343,  9.35362558,
+         9.74573396, 10.09686527, 10.37273586, 10.56212272, 10.68557692,
+        10.68596125, 10.6780553 , 10.65700078, 10.59355029, 10.48810738,
+        10.34999917, 10.1318978 ,  9.87267065,  9.57807339,  9.1531929 ,
+         8.65226711,  8.07529897,  7.33515477,  6.5282417 ,  5.63918044,
+         4.61839953,  3.54421881,  2.40161857,  1.1588172 ,  0.23318064]
     # counter to know when to start attack (1 sec after OP works)
     self.frame_counter = 0
 
+    logging.basicConfig(level=logging.DEBUG, filename="/tmp/takami_log", filemode="a+", format="%(asctime)-15s %(levelname)-8s %(message)s")
+    logging.info("PathPlanner __init__")
+
   def _get_attacked_steering_angle(self, desired_steering_angle_mpc):
 
-    self.frame_counter = self.frame_counter % 40
+    self.frame_counter = self.frame_counter % (20 + len(self.attacked_desiered_steering_angles))
 
     if self.frame_counter < 20:
       # For the first 20 frames (1 sec), just use mpc output
@@ -208,8 +216,11 @@ class PathPlanner():
 
     self.angle_steers_des_mpc = float(math.degrees(delta_desired * VM.sR) + angle_offset)
     # Overwirte desired steering angle
-    self.angle_steers_des_mpc = self._get_attacked_steering_angle(self.angle_steers_des_mpc)
-
+    try:
+      self.angle_steers_des_mpc = self._get_attacked_steering_angle(self.angle_steers_des_mpc)
+    except:
+      import traceback
+      logging.info(traceback.format_exc())
 
     #  Check for infeasable MPC solution
     mpc_nans = any(math.isnan(x) for x in self.mpc_solution[0].delta)
