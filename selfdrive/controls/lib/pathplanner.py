@@ -49,11 +49,15 @@ class LaneLine:
         self.points = points
         self.prob = prob
 
+class Meta:
+  def __init_(self):
+    self.desireState = []
 class ModelOutput:
     def __init__(self, l_poly, r_poly, p_poly, l_prob, r_prob):
         self.leftLane = LaneLine(l_poly, l_prob)
         self.rightLane = LaneLine(r_poly, r_prob)
         self.path = LaneLine(p_poly, 1.)
+        self.meta = Meta()
 ####
 
 def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_ratio, delay):
