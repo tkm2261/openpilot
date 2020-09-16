@@ -10,6 +10,8 @@ from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.controls.lib.pathplanner import PathPlanner
 import cereal.messaging as messaging
 
+import logging
+logging.basicConfig(level=logging.DEBUG, filename="/tmp/planner_log", filemode="a+", format="%(asctime)-15s %(levelname)-8s %(message)s")
 
 def plannerd_thread(sm=None, pm=None):
   gc.disable()
@@ -39,6 +41,11 @@ def plannerd_thread(sm=None, pm=None):
 
   while True:
     sm.update()
+    logging.info('cruiseState.enabled: %s' % sm['carState'].cruiseState.enabled)
+    if not sm['carState'].cruiseState.enabled:
+      PL = Planner(CP)
+      PP = PathPlanner(CP)
+      VM = VehicleModel(CP)
 
     if sm.updated['model']:
       PP.update(sm, pm, CP, VM)

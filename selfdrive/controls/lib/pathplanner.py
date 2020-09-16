@@ -86,7 +86,7 @@ class PathPlanner():
     path = '/tmp/frame_counter.npy'
     np.save(path, 0)
     logging.basicConfig(level=logging.DEBUG, filename="/tmp/takami_log", filemode="a+", format="%(asctime)-15s %(levelname)-8s %(message)s")
-    logging.info("PathPlanner __init__")
+    #logging.info("PathPlanner __init__")
 
   def setup_mpc(self):
     self.libmpc = libmpc_py.libmpc
