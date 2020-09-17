@@ -240,7 +240,7 @@ class PathPlanner():
     self.cur_state[0].delta = delta_desired
 
     self.angle_steers_des_mpc = float(math.degrees(delta_desired * VM.sR) + angle_offset)
-    logging.info('desired_steering: %s' % self.angle_steers_des_mpc)
+    logging.info('desired_steering %s: %s' % (frame_counter, self.angle_steers_des_mpc))
     
     #  Check for infeasable MPC solution
     mpc_nans = any(math.isnan(x) for x in self.mpc_solution[0].delta)

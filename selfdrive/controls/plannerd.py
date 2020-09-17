@@ -21,7 +21,9 @@ def plannerd_thread(sm=None, pm=None):
 
   cloudlog.info("plannerd is waiting for CarParams")
   CP = car.CarParams.from_bytes(Params().get("CarParams", block=True))
-  cloudlog.info("plannerd got CarParams: %s", CP.carName)
+  #from selfdrive.car.car_helpers import interfaces
+  #CP = interfaces['mock'][0].get_params("mock")
+  #cloudlog.info("plannerd got CarParams: %s", CP.carName)
 
   PL = Planner(CP)
   PP = PathPlanner(CP)
