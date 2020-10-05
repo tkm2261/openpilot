@@ -208,16 +208,17 @@ int main(int argc, char **argv) {
       }
 
       Message *msg2 = carstate_sock->receive(true);
+      printf("BBBB\n");
       if (msg2 != NULL) {
         // TODO: copy and pasted from camerad/main.cc
         auto amsg2 = kj::heapArray<capnp::word>((msg2->getSize() / sizeof(capnp::word)) + 1);
         memcpy(amsg2.begin(), msg2->getData(), msg2->getSize());
 
         capnp::FlatArrayMessageReader cmsg2(amsg2);
-        cereal::Event::Reader event2 = cmsg2.getRoot<cereal::Event>();
+        cereal::CarState::Reader event2 = cmsg2.getRoot<cereal::CarState>();
 
         // TODO: path planner timeout?
-        enabled = event.getCruiseState().getEnabled();
+        enabled = event2.getCruiseState().getEnabled();
         printf("AAAAAAAAAAAAAAAAA\n");
         delete msg;
       }
