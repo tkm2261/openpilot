@@ -105,6 +105,9 @@ int main(int argc, char **argv) {
   PubSocket *posenet_sock = PubSocket::create(msg_context, "cameraOdometry");
   SubSocket *pathplan_sock = SubSocket::create(msg_context, "pathPlan", "127.0.0.1", true);
 
+  SubSocket *carstate_sock = SubSocket::create(msg_context, "carState", "127.0.0.1", true);
+
+
   assert(model_sock != NULL);
   assert(posenet_sock != NULL);
   assert(pathplan_sock != NULL);
@@ -175,6 +178,7 @@ int main(int argc, char **argv) {
 
     double last = 0;
     int desire = -1;
+    bool enabled = false;
     while (!do_exit) {
       VIPCBuf *buf;
       VIPCBufExtra extra;
@@ -200,6 +204,21 @@ int main(int argc, char **argv) {
 
         // TODO: path planner timeout?
         desire = ((int)event.getPathPlan().getDesire()) - 1;
+        delete msg;
+      }
+
+      Message *msg2 = carstate_sock->receive(true);
+      if (msg2 != NULL) {
+        // TODO: copy and pasted from camerad/main.cc
+        auto amsg2 = kj::heapArray<capnp::word>((msg2->getSize() / sizeof(capnp::word)) + 1);
+        memcpy(amsg2.begin(), msg2->getData(), msg2->getSize());
+
+        capnp::FlatArrayMessageReader cmsg2(amsg2);
+        cereal::Event::Reader event2 = cmsg2.getRoot<cereal::Event>();
+
+        // TODO: path planner timeout?
+        enabled = event.getCruiseState().getEnabled();
+        printf("AAAAAAAAAAAAAAAAA\n");
         delete msg;
       }
 
