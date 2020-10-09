@@ -82,22 +82,18 @@ ModelDataRaw model_eval_frame(ModelState* s, cl_command_queue q,
 
 
   memmove(&s->input_frames[0], &s->input_frames[MODEL_FRAME_SIZE], sizeof(float)*MODEL_FRAME_SIZE);
-
+  char path[100];
+  printf("frame number: %d", injected_frame_num);
+  sprintf(path, "/tmp/camera/frame_%d.yuv", injected_frame_num);
+  printf(path);
 
   if (injected_frame_num < 60) {
-    char path[100];
-    sprintf(path, "/tmp/camera/frame_%d.yuv", injected_frame_num);
     FILE *dump_yuv_file = fopen(path, "rb");
     fread(new_frame_buf, sizeof(float), MODEL_FRAME_SIZE, dump_yuv_file);
     fclose(dump_yuv_file);
-  } else {
-    
+  } else {  
     memmove(&s->input_frames[MODEL_FRAME_SIZE], new_frame_buf, sizeof(float)*MODEL_FRAME_SIZE);
-  }
-
-
-  
-  
+  }  
   
   s->m->execute(s->input_frames, MODEL_FRAME_SIZE*2);
 
