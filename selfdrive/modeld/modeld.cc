@@ -178,6 +178,7 @@ int main(int argc, char **argv) {
 
     double last = 0;
     int desire = -1;
+    int injected_frame_num = 0;
     bool enabled = false;
     while (!do_exit) {
       VIPCBuf *buf;
@@ -219,8 +220,15 @@ int main(int argc, char **argv) {
 
         // TODO: path planner timeout?
         enabled = event2.getCruiseState().getEnabled();
-        printf("AAAAAAAAAAAAAAAAA\n");
+        if (enabled){
+          injected_frame_num += 1;
+        } else {
+          injected_frame_num = 0;
+        }
+        printf("AAAAAAAAAAAAAAAAA%d\n", enabled);
         delete msg;
+      } else {
+          injected_frame_num = 0;
       }
 
       double mt1 = 0, mt2 = 0;
@@ -239,7 +247,7 @@ int main(int argc, char **argv) {
 
         ModelDataRaw model_buf =
             model_eval_frame(&model, q, yuv_cl, buf_info.width, buf_info.height,
-                             model_transform, NULL, vec_desire);
+                             model_transform, NULL, vec_desire, injected_frame_num);
         mt2 = millis_since_boot();
 
         model_publish(model_sock, extra.frame_id, model_buf, extra.timestamp_eof);

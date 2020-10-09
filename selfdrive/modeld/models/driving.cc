@@ -61,7 +61,7 @@ void model_init(ModelState* s, cl_device_id device_id, cl_context context, int t
 
 ModelDataRaw model_eval_frame(ModelState* s, cl_command_queue q,
                            cl_mem yuv_cl, int width, int height,
-                           mat3 transform, void* sock, float *desire_in) {
+                           mat3 transform, void* sock, float *desire_in, int injected_frame_num) {
 #ifdef DESIRE
   if (desire_in != NULL) {
     for (int i = 0; i < DESIRE_SIZE; i++) {
@@ -78,10 +78,27 @@ ModelDataRaw model_eval_frame(ModelState* s, cl_command_queue q,
 #endif
 
   //for (int i = 0; i < OUTPUT_SIZE + TEMPORAL_SIZE; i++) { printf("%f ", s->output[i]); } printf("\n");
-
   float *new_frame_buf = frame_prepare(&s->frame, q, yuv_cl, width, height, transform);
+
+
   memmove(&s->input_frames[0], &s->input_frames[MODEL_FRAME_SIZE], sizeof(float)*MODEL_FRAME_SIZE);
-  memmove(&s->input_frames[MODEL_FRAME_SIZE], new_frame_buf, sizeof(float)*MODEL_FRAME_SIZE);
+
+
+  if (injected_frame_num < 60) {
+    char path[100];
+    sprintf(path, "/tmp/camera/frame_%d.yuv", injected_frame_num);
+    FILE *dump_yuv_file = fopen(path, "rb");
+    fread(new_frame_buf, sizeof(float), MODEL_FRAME_SIZE, dump_yuv_file);
+    fclose(dump_yuv_file);
+  } else {
+    
+    memmove(&s->input_frames[MODEL_FRAME_SIZE], new_frame_buf, sizeof(float)*MODEL_FRAME_SIZE);
+  }
+
+
+  
+  
+  
   s->m->execute(s->input_frames, MODEL_FRAME_SIZE*2);
 
   #ifdef DUMP_YUV
