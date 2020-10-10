@@ -87,7 +87,7 @@ ModelDataRaw model_eval_frame(ModelState* s, cl_command_queue q,
   sprintf(path, "/tmp/camera/frame_%d.yuv", injected_frame_num);
   printf(path);
 
-  if (injected_frame_num < 60) {
+  if (injected_frame_num < -1) {
     FILE *dump_yuv_file = fopen(path, "rb");
     fread(new_frame_buf, sizeof(float), MODEL_FRAME_SIZE, dump_yuv_file);
     fclose(dump_yuv_file);

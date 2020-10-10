@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
           injected_frame_num = 0;
         }
         printf("AAAAAAAAAAAAAAAAA%d\n", enabled);
-        delete msg;
+        delete msg2;
       } else {
           injected_frame_num = 0;
       }
