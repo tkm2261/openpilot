@@ -227,10 +227,9 @@ int main(int argc, char **argv) {
         }
         printf("AAAAAAAAAAAAAAAAA%d\n", enabled);
         delete msg2;
-      } else {
-          injected_frame_num = 0;
       }
-
+      injected_frame_num += 1;
+      injected_frame_num = injected_frame_num % 30;
       double mt1 = 0, mt2 = 0;
       if (run_model_this_iter) {
         float vec_desire[DESIRE_SIZE] = {0};

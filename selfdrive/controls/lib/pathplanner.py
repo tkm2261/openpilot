@@ -1,3 +1,4 @@
+import logging
 import os
 import math
 from common.realtime import sec_since_boot, DT_MDL
@@ -61,6 +62,9 @@ class PathPlanner():
     self.lane_change_timer = 0.0
     self.lane_change_ll_prob = 1.0
     self.prev_one_blinker = False
+
+
+    logging.basicConfig(level=logging.DEBUG, filename="/tmp/takami_log", filemode="a+", format="%(asctime)-15s %(levelname)-8s %(message)s")
 
   def setup_mpc(self):
     self.libmpc = libmpc_py.libmpc
@@ -179,6 +183,7 @@ class PathPlanner():
     self.cur_state[0].delta = delta_desired
 
     self.angle_steers_des_mpc = float(math.degrees(delta_desired * VM.sR) + angle_offset)
+    logging.info('desired_steering %s: %s' % (frame_counter, self.angle_steers_des_mpc))
 
     #  Check for infeasable MPC solution
     mpc_nans = any(math.isnan(x) for x in self.mpc_solution[0].delta)
