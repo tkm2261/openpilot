@@ -1,5 +1,7 @@
 import os
 import math
+import logging
+import numpy as np
 from common.realtime import sec_since_boot, DT_MDL
 from selfdrive.swaglog import cloudlog
 from selfdrive.controls.lib.lateral_mpc import libmpc_py
@@ -39,6 +41,24 @@ DESIRES = {
   },
 }
 
+####
+#Mock model output to inject poly
+class LaneLine:
+    def __init__(self, poly, prob, points=None):
+        self.poly = poly
+        self.points = points
+        self.prob = prob
+
+class Meta:
+  def __init_(self):
+    self.desireState = []
+class ModelOutput:
+    def __init__(self, l_poly, r_poly, p_poly, l_prob, r_prob):
+        self.leftLane = LaneLine(l_poly, l_prob)
+        self.rightLane = LaneLine(r_poly, r_prob)
+        self.path = LaneLine(p_poly, 1.)
+        self.meta = Meta()
+####
 
 def calc_states_after_delay(states, v_ego, steer_angle, curvature_factor, steer_ratio, delay):
   states[0].x = v_ego * delay
@@ -62,6 +82,12 @@ class PathPlanner():
     self.lane_change_ll_prob = 1.0
     self.prev_one_blinker = False
 
+    # initialize frame counter
+    path = '/tmp/frame_counter.npy'
+    np.save(path, 0)
+    logging.basicConfig(level=logging.DEBUG, filename="/tmp/takami_log", filemode="a+", format="%(asctime)-15s %(levelname)-8s %(message)s")
+    #logging.info("PathPlanner __init__")
+
   def setup_mpc(self):
     self.libmpc = libmpc_py.libmpc
     self.libmpc.init(MPC_COST_LAT.PATH, MPC_COST_LAT.LANE, MPC_COST_LAT.HEADING, self.steer_rate_cost)
@@ -79,6 +105,13 @@ class PathPlanner():
     self.angle_steers_des_time = 0.0
 
   def update(self, sm, pm, CP, VM):
+    try:
+      self._update(sm, pm, CP, VM)
+    except:
+      import traceback
+      logging.info(traceback.format_exc())
+
+  def _update(self, sm, pm, CP, VM):
     v_ego = sm['carState'].vEgo
     angle_steers = sm['carState'].steeringAngle
     active = sm['controlsState'].active
@@ -90,7 +123,35 @@ class PathPlanner():
     VM.update_params(sm['liveParameters'].stiffnessFactor, sm['liveParameters'].steerRatio)
     curvature_factor = VM.curvature_factor(v_ego)
 
-    self.LP.parse_model(sm['model'])
+    ###
+    path = '/tmp/frame_counter.npy'
+    if not os.path.exists(path):
+      np.save(path, 0)
+    frame_counter = int(np.load(path))
+    logging.info('frame: %s' % frame_counter)
+    if frame_counter < 20:
+      frame_counter += 1
+      np.save(path, frame_counter)
+      self.LP.parse_model(sm['model'])
+    elif frame_counter < 20 + 61:
+      idx = frame_counter - 20
+      data = np.load('/tmp/poly/poly_%s.npy' % idx)
+      l_poly = data[0:4]
+      r_poly = data[4:8]
+      p_poly = data[8:12]
+      l_prob = data[12]
+      r_prob = data[13]
+
+      md = ModelOutput(l_poly, r_poly, p_poly, l_prob, r_prob)
+
+      self.LP.parse_model(md)
+
+      frame_counter += 1
+      np.save(path, frame_counter)
+    else:
+      self.LP.parse_model(sm['model'])
+      frame_counter = 0
+      np.save(path, frame_counter)
 
     # Lane change logic
     one_blinker = sm['carState'].leftBlinker != sm['carState'].rightBlinker
@@ -179,7 +240,8 @@ class PathPlanner():
     self.cur_state[0].delta = delta_desired
 
     self.angle_steers_des_mpc = float(math.degrees(delta_desired * VM.sR) + angle_offset)
-
+    logging.info('desired_steering %s: %s' % (frame_counter, self.angle_steers_des_mpc))
+    
     #  Check for infeasable MPC solution
     mpc_nans = any(math.isnan(x) for x in self.mpc_solution[0].delta)
     t = sec_since_boot()
